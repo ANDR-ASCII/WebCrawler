@@ -5,7 +5,7 @@ project(${TerminalProjectName})
 set(TerminalSourcesDirectory src)
 set(TerminalIncludeDirectory include)
 
-file(GLOB_RECURSE TerminalSourcesList "src/*.cpp")
+aux_source_directory(${TerminalSourcesDirectory} TerminalSourcesList)
 file(GLOB_RECURSE TerminalIncludeList "include/*.h")
 
 list(REMOVE_ITEM TerminalSourcesList src/stdafx.cpp)
@@ -30,7 +30,6 @@ if(MSVC)
 	add_definitions(
 		/EHsc
 		/MP
-		/permissive-
 		/std:c++latest
 		/Zi
 		/W4
@@ -44,7 +43,7 @@ if(MSVC)
 	
 	set_target_properties(
 		${TerminalProjectName} 
-		PROPERTIES WIN32_EXECUTABLE YES
+		PROPERTIES
 		LINK_FLAGS "/DEBUG /ENTRY:mainCRTStartup /MAP"
 	)
 endif()

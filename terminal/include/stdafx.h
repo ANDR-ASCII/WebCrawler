@@ -91,14 +91,11 @@
 #include <utility>
 #include <cassert>
 #include <functional>
-#include <optional>
 #include <sstream>
 #include <csignal>
 #include <limits>
 #include <fstream>
-#include <optional>
 #include <windows.h>
-#include <VMProtectSDK.h>
 
 //
 // boost
@@ -107,25 +104,25 @@
 namespace std
 {
 
-//
-// In C++11 std::unary_function template are deprecated
-// In C++17 it was removed
-// We use /std:c++latest flag for compile this project
-// And therefore boost::lexical_cast does not compiled
-// Because it uses removed std::unary_function template
-//
-// DELETE THIS AFTER CHANGING BOOST ON LATER VERSION WHERE IT WILL BE FIXED
-//
-// http://en.cppreference.com/w/cpp/utility/functional/unary_function
-// https://svn.boost.org/trac10/ticket/12972
-//
+	//
+	// In C++11 std::unary_function template are deprecated
+	// In C++17 it was removed
+	// We use /std:c++latest flag for compile this project
+	// And therefore boost::lexical_cast does not compiled
+	// Because it uses removed std::unary_function template
+	//
+	// DELETE THIS AFTER CHANGING BOOST ON LATER VERSION WHERE IT WILL BE FIXED
+	//
+	// http://en.cppreference.com/w/cpp/utility/functional/unary_function
+	// https://svn.boost.org/trac10/ticket/12972
+	//
 
-template <class _Arg, class _Result>
-struct unary_function
-{
-	typedef _Arg argument_type;
-	typedef _Result result_type;
-};
+	template <class _Arg, class _Result>
+	struct unary_function
+	{
+		typedef _Arg argument_type;
+		typedef _Result result_type;
+	};
 
 }
 
@@ -138,14 +135,8 @@ struct unary_function
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/positional_options.hpp>
 
-#include "common_macro_helpers.h"
-
 using namespace std::chrono_literals;
 using std::size_t;
-
-#define theApp static_cast<Application*>(Application::instance())
-
-#define MAKE_STRING(Any) #Any
 
 #ifndef QT_DEBUG
 #define PRODUCTION
@@ -160,34 +151,3 @@ using std::size_t;
 #else
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
-
-#if defined(Q_OS_WIN)
-
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
-#include <ws2tcpip.h>
-#include <mstcpip.h>
-#include <shellapi.h>
-#include <ipexport.h>
-#include <icmpapi.h>
-
-#define CANNOT_CREATE_SOCKET INVALID_SOCKET
-
-#endif
-
-#if defined(Q_OS_MACOS) || defined(Q_OS_UNIX)
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <fcntl.h>
-
-#define SOCKET int
-#define CANNOT_CREATE_SOCKET -1
-
-#endif
-
-#include "counted_ptr.h"
