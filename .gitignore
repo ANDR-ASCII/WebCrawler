@@ -1,6 +1,3 @@
-build/
-x64/
-.vs/
-doxydoc/
-*.json
-*.aps
+webcrawler/bin
+webcrawler/obj
+.vs
