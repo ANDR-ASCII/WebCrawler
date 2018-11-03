@@ -11,7 +11,10 @@ namespace webcrawler
     {
         static void Main(string[] args)
         {
-            try
+            loader.CommandWatcher watcher = new loader.CommandWatcher(0);
+            watcher.StartWatching();
+
+            /*try
             {
                 IWebDriver driver = new ChromeDriver(Directory.GetCurrentDirectory());
 
@@ -45,7 +48,7 @@ namespace webcrawler
             {
                 Console.WriteLine(exception.Message);
                 Console.ReadKey();
-            }
+            }*/
         }
     }
 }
