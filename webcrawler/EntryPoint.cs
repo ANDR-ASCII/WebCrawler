@@ -3,10 +3,11 @@ using System.IO;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
+using MySql.Data.MySqlClient;
 
 namespace webcrawler
 {
-    class Program
+    class EntryPoint
     {
         static void Main(string[] args)
         {
@@ -34,6 +35,11 @@ namespace webcrawler
 
                 // Should see: "Cheese - Google Search" (for an English locale)
                 Console.WriteLine("Page title is: " + driver.Title);
+
+                using (MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;pwd=root;database=webcrawler"))
+                {
+                    connection.Open();
+                }
             }
             catch(System.Exception exception)
             {
