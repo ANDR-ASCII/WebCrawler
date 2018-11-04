@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace webcrawler.loader
+namespace webcrawler.database
 {
     enum DatabaseType
     {

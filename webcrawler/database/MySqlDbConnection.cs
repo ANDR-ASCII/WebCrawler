@@ -5,45 +5,45 @@ namespace webcrawler.database
 {
     class MySqlDbConnection : IDbConnection
     {
-        MySql.Data.MySqlClient.MySqlConnection _connection;
-        string _database;
-        string _password;
-        string _userName;
-        string _serverAddress;
+        MySql.Data.MySqlClient.MySqlConnection m_connection;
+        string m_database;
+        string m_password;
+        string m_userName;
+        string m_serverAddress;
 
         //============================================================
 
-        public void SetServerAddress(string serverAddress)
+        public void setServerAddress(string serverAddress)
         {
-            _serverAddress = serverAddress;
+            m_serverAddress = serverAddress;
         }
 
-        public void SetUserName(string userName)
+        public void setUserName(string userName)
         {
-            _userName = userName;
+            m_userName = userName;
         }
 
-        public void SetUserPassword(string password)
+        public void setUserPassword(string password)
         {
-            _password = password;
+            m_password = password;
         }
 
-        public void SetDatabaseName(string database)
+        public void setDatabaseName(string database)
         {
-            _database = database;
+            m_database = database;
         }
 
-        public bool Open()
+        public bool open()
         {
             try
             {
-                _connection = new MySql.Data.MySqlClient.MySqlConnection(
-                    "server=" + _serverAddress +
-                    ";uid=" + _userName +
-                    ";pwd=" + _password +
-                    ";database=" + _database);
+                m_connection = new MySql.Data.MySqlClient.MySqlConnection(
+                    "server=" + m_serverAddress +
+                    ";uid=" + m_userName +
+                    ";pwd=" + m_password +
+                    ";database=" + m_database);
 
-                _connection.Open();
+                m_connection.Open();
 
                 return true;
             }
@@ -72,11 +72,11 @@ namespace webcrawler.database
             return false;
         }
 
-        public bool Close()
+        public bool close()
         {
             try
             {
-                _connection.Close();
+                m_connection.Close();
 
                 return true;
             }
@@ -88,20 +88,20 @@ namespace webcrawler.database
             return false;
         }
 
-        public bool Ping()
+        public bool ping()
         {
-            return _connection != null && _connection.Ping();
+            return m_connection != null && m_connection.Ping();
         }
 
-        public void ExecuteChangeQuery(string query)
+        public void executeChangeQuery(string query)
         {
-            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, _connection);
+            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, m_connection);
             command.ExecuteNonQuery();
         }
 
-        public List<object>[] ExecuteReadQuery(string query)
+        public List<object>[] executeReadQuery(string query)
         {
-            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, _connection);
+            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, m_connection);
             MySql.Data.MySqlClient.MySqlDataReader dataReader = command.ExecuteReader();
 
             List<object>[] result = new List<object>[dataReader.FieldCount];
@@ -123,9 +123,9 @@ namespace webcrawler.database
             return result;
         }
 
-        public ISqlTransaction BeginTransaction()
+        public ISqlTransaction beginTransaction()
         {
-            return new MySqlTransaction(_connection.BeginTransaction());
+            return new MySqlTransaction(m_connection.BeginTransaction());
         }
     }
 }

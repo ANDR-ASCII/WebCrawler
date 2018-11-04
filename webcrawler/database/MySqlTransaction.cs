@@ -2,21 +2,21 @@
 {
     class MySqlTransaction : ISqlTransaction
     {
-        MySql.Data.MySqlClient.MySqlTransaction _nativeTransaction;
+        MySql.Data.MySqlClient.MySqlTransaction m_nativeTransaction;
 
         public MySqlTransaction(MySql.Data.MySqlClient.MySqlTransaction nativeTransaction)
         {
-            _nativeTransaction = nativeTransaction;
+            m_nativeTransaction = nativeTransaction;
         }
 
         public void Commit()
         {
-            _nativeTransaction.Commit();
+            m_nativeTransaction.Commit();
         }
 
         public void Rollback()
         {
-            _nativeTransaction.Rollback();
+            m_nativeTransaction.Rollback();
         }
     }
 }

@@ -6,86 +6,53 @@ namespace webcrawler.loader
 {
     class Loader
     {
-        OpenQA.Selenium.IWebDriver _webDriver;
-        List<string> _urls;
-        object _locker;
-        bool _stop;
-        int _crawlerId;
-        database.IDbConnection _connection;
+        int m_crawlerId;
+        OpenQA.Selenium.IWebDriver m_webDriver;
+        database.IDbConnection m_connection;
+        DataProvider m_dataProvider;
 
         public Loader(int crawlerId, database.IDbConnection connection)
         {
-            InitializeWebDriver();
+            m_crawlerId = crawlerId;
 
-            _urls = new List<string>();
-            _locker = new object();
+            initializeWebDriver();
 
-            _crawlerId = crawlerId;
-            _connection = connection;
+            m_connection = connection;
+            m_dataProvider = new DataProvider(m_connection, m_crawlerId);
         }
 
-        public void Start()
+        public void start()
         {
-            _stop = false;
-
             while (true)
             {
-                lock (_locker)
-                {
-                    if (_stop)
-                    {
-                        break;
-                    }
-                }
-
-                CheckQueue();
+                checkQueue();
                 Thread.Sleep(100);
             }
         }
 
-        public void Stop()
+        void checkQueue()
         {
-            lock (_locker)
-            {
-                _stop = true;
-            }
-        }
-
-        void CheckQueue()
-        {
-            List<string> urls = GetAllUrlsToLoadFromQueue();
+            List<string> urls = m_dataProvider.getAllUrlsToLoadFromQueue();
 
             if (urls.Count == 0)
             {
                 return;
             }
 
-            LoadUrls(urls);
+            loadUrls(urls);
 
-            _connection.ExecuteReadQuery("DELETE FROM queue WHERE crawler_id='" + _crawlerId + "' and catched='1'");
+            m_dataProvider.removeAllCatchedUrls();
         }
 
-        string GetWebResourceUrlById(int id)
-        {
-            List<object>[] result = _connection.ExecuteReadQuery("SELECT url FROM web_resources WHERE id='" + id + "'");
-
-            if (result.Length == 0)
-            {
-                return null;
-            }
-
-            return result[0][0].ToString();
-        }
-
-        void LoadUrls(List<string> urls)
+        void loadUrls(List<string> urls)
         {
             foreach (string url in urls)
             {
-                LoadUrl(url);
+                loadUrl(url);
             }
         }
 
-        void LoadUrl(string url)
+        void loadUrl(string url)
         {
             const string javaScriptWaitFunction =
                 "function wait()" +
@@ -94,53 +61,26 @@ namespace webcrawler.loader
                 "}" +
                 "wait();";
 
-            url = FixUrlProtocolIfNeeded(url);
-            _webDriver.Navigate().GoToUrl(url);
+            url = fixUrlProtocolIfNeeded(url);
+            m_webDriver.Navigate().GoToUrl(url);
 
             OpenQA.Selenium.IJavaScriptExecutor javaScriptExecutor =
-                _webDriver as OpenQA.Selenium.IJavaScriptExecutor;
+                m_webDriver as OpenQA.Selenium.IJavaScriptExecutor;
 
             javaScriptExecutor.ExecuteScript(javaScriptWaitFunction);
 
             System.Console.WriteLine(url + " loaded");
         }
 
-        List<string> GetAllUrlsToLoadFromQueue()
-        {
-            _connection.ExecuteChangeQuery("UPDATE queue SET catched='1' WHERE crawler_id='" + _crawlerId + "'");
-            List<object>[] queryResult = _connection.ExecuteReadQuery("SELECT web_resource_id, path FROM queue WHERE crawler_id='" + _crawlerId + "'");
-
-            List<string> result = new List<string>();
-
-            if (result == null || queryResult.Length == 0)
-            {
-                return result;
-            }
-
-            for (int i = 0; i < queryResult[0].Count && queryResult[0][i] != null; ++i)
-            {
-                string url = GetWebResourceUrlById(int.Parse(queryResult[0][i].ToString()));
-
-                if (url == null)
-                {
-                    continue;
-                }
-
-                result.Add(url + queryResult[1][i].ToString());
-            }
-
-            return result;
-        }
-
-        void InitializeWebDriver()
+        void initializeWebDriver()
         {
             OpenQA.Selenium.Chrome.ChromeOptions options = new OpenQA.Selenium.Chrome.ChromeOptions();
             options.AddArgument("--headless");
 
-            _webDriver = new OpenQA.Selenium.Chrome.ChromeDriver(Directory.GetCurrentDirectory(), options);
+            m_webDriver = new OpenQA.Selenium.Chrome.ChromeDriver(Directory.GetCurrentDirectory(), options);
         }
 
-        string FixUrlProtocolIfNeeded(string url)
+        string fixUrlProtocolIfNeeded(string url)
         {
             if (!url.StartsWith("https://") && !url.StartsWith("http://"))
             {

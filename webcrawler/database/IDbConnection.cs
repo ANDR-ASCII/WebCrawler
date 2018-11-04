@@ -4,17 +4,17 @@ namespace webcrawler.database
 {
     interface IDbConnection
     {
-        void SetServerAddress(string serverAddress);
-        void SetUserName(string userName);
-        void SetUserPassword(string password);
-        void SetDatabaseName(string database);
-        bool Open();
-        bool Close();
-        bool Ping();
+        void setServerAddress(string serverAddress);
+        void setUserName(string userName);
+        void setUserPassword(string password);
+        void setDatabaseName(string database);
+        bool open();
+        bool close();
+        bool ping();
 
-        void ExecuteChangeQuery(string query);
-        List<object>[] ExecuteReadQuery(string query);
+        void executeChangeQuery(string query);
+        List<object>[] executeReadQuery(string query);
 
-        ISqlTransaction BeginTransaction();
+        ISqlTransaction beginTransaction();
     }
 }
