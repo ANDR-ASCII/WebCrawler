@@ -1,5 +1,4 @@
-﻿using System.Data;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace webcrawler.database
 {
@@ -13,10 +12,9 @@ namespace webcrawler.database
         bool Close();
         bool Ping();
 
-        // queries
         void ExecuteChangeQuery(string query);
         List<object>[] ExecuteReadQuery(string query);
 
-        DataTable GetSchema(string name);
+        ISqlTransaction BeginTransaction();
     }
 }

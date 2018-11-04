@@ -1,12 +1,18 @@
 ﻿using System;
-using System.Data;
-using MySql.Data.MySqlClient;
 using System.Collections.Generic;
 
 namespace webcrawler.database
 {
     class MySqlDbConnection : IDbConnection
     {
+        MySql.Data.MySqlClient.MySqlConnection _connection;
+        string _database;
+        string _password;
+        string _userName;
+        string _serverAddress;
+
+        //============================================================
+
         public void SetServerAddress(string serverAddress)
         {
             _serverAddress = serverAddress;
@@ -31,18 +37,23 @@ namespace webcrawler.database
         {
             try
             {
-                _connection = new MySqlConnection("server=" + _serverAddress + ";uid=" + _userName + ";pwd=" + _password + ";database=" + _database);
+                _connection = new MySql.Data.MySqlClient.MySqlConnection(
+                    "server=" + _serverAddress +
+                    ";uid=" + _userName +
+                    ";pwd=" + _password +
+                    ";database=" + _database);
+
                 _connection.Open();
 
                 return true;
             }
-            catch(MySqlException exception)
+            catch(MySql.Data.MySqlClient.MySqlException exception)
             {
                 switch (exception.Number)
                 {
                     case 0:
                     {
-                        Console.WriteLine("Cannot connect to server.  Contact administrator");
+                        Console.WriteLine("Cannot connect to server. Contact administrator");
                         break;
                     }
 
@@ -69,7 +80,7 @@ namespace webcrawler.database
 
                 return true;
             }
-            catch (MySqlException exception)
+            catch (MySql.Data.MySqlClient.MySqlException exception)
             {
                 Console.WriteLine(exception.Message);
             }
@@ -84,14 +95,14 @@ namespace webcrawler.database
 
         public void ExecuteChangeQuery(string query)
         {
-            MySqlCommand command = new MySqlCommand(query, _connection);
+            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, _connection);
             command.ExecuteNonQuery();
         }
 
         public List<object>[] ExecuteReadQuery(string query)
         {
-            MySqlCommand command = new MySqlCommand(query, _connection);
-            MySqlDataReader dataReader = command.ExecuteReader();
+            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, _connection);
+            MySql.Data.MySqlClient.MySqlDataReader dataReader = command.ExecuteReader();
 
             List<object>[] result = new List<object>[dataReader.FieldCount];
 
@@ -112,17 +123,9 @@ namespace webcrawler.database
             return result;
         }
 
-        public DataTable GetSchema(string name)
+        public ISqlTransaction BeginTransaction()
         {
-            return _connection.GetSchema(name);
+            return new MySqlTransaction(_connection.BeginTransaction());
         }
-
-        //////////////////////////////////////////////////////////////////////////////
-
-        private MySqlConnection _connection;
-        private string _database;
-        private string _password;
-        private string _userName;
-        private string _serverAddress;
     }
 }

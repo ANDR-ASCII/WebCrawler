@@ -1,14 +1,18 @@
-﻿using System.Data;
-using System.Threading;
+﻿using System.Threading;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace webcrawler.loader
 {
     class CommandWatcher
     {
-        public delegate void SettingsChangedCallback(DataTable datatable);
+        const int c_watchPauseTime = 5000;
+        database.IDbConnection _connection;
+        int _crawlerId;
+        List<Loader> _loaders;
 
-        public CommandWatcher(int crawlerGroupId)
+
+        public CommandWatcher(int crawlerId, int loaderCount)
         {
             _connection = ConnectionFactory.CreateConnection(DatabaseType.DatabaseMySql);
             _connection.SetDatabaseName("webcrawler");
@@ -17,70 +21,22 @@ namespace webcrawler.loader
             _connection.SetUserPassword("root");
             _connection.Open();
 
-            _crawlerGroupId = crawlerGroupId;
-            _loader = new Loader();
+            _crawlerId = crawlerId;
+            _loaders = new List<Loader>();
+
+            for (int i = 0; i < loaderCount; ++i)
+            {
+                _loaders.Add(new Loader(_crawlerId, _connection));
+                Parallel.Invoke(_loaders[i].Start);
+            }
         }
 
         public void StartWatching()
         {
-            while(true)
+            while (true)
             {
-                CheckQueue();
-
                 Thread.Sleep(c_watchPauseTime);
             }
         }
-
-        public void AddSettingsChangedCallback(SettingsChangedCallback callback)
-        {
-            _settingsChangedEvent += callback;
-        }
-        public void RemoveSettingsChangedCallbacks(SettingsChangedCallback callback)
-        {
-            _settingsChangedEvent -= callback;
-        }
-
-        private void CheckQueue()
-        {
-            List<object>[] result = _connection.ExecuteReadQuery("SELECT web_resource_id, path FROM queue WHERE crawler_group_id='" + _crawlerGroupId + "'");
-
-            // 0 - web_resource_id
-            // 1 - path
-
-            if (result == null || result.Length == 0)
-            {
-                return;
-            }
-
-            for (int i = 0; i < result[0].Count && result[i] != null; ++i)
-            {
-                string url = GetWebResourceUrlById(int.Parse(result[0][i].ToString()));
-                _loader.ScheduleUrl(url + result[1][i].ToString());
-            }
-
-            _loader.ExtractAndLoadUrl();
-        }
-
-        private string GetWebResourceUrlById(int id)
-        {
-            List<object>[] result = _connection.ExecuteReadQuery("SELECT url FROM web_resources WHERE id='" + id + "'");
-
-            if (result.Length == 0)
-            {
-                return new string("");
-            }
-
-            return result[0][0].ToString();
-        }
-
-        //==========================================================================================================
-
-        const int c_watchPauseTime = 5000;
-
-        private database.IDbConnection _connection;
-        private event SettingsChangedCallback _settingsChangedEvent;
-        private int _crawlerGroupId;
-
-        Loader _loader;
     }
 }
