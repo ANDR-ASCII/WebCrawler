@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using webcrawler.database;
+using webcrawler.loader;
 
 namespace webcrawler
 {
@@ -17,30 +20,17 @@ namespace webcrawler
                     return;
                 }
 
-                database.IDbConnection connection =
-                    database.ConnectionFactory.CreateConnection(database.DatabaseType.DatabaseMySql);
+                CrawlerRegistrator registrator = new CrawlerRegistrator(DatabaseType.DatabaseMySql,
+                    configuration.DatabaseName,
+                    configuration.Server,
+                    configuration.User,
+                    configuration.Password);
 
-                connection.setDatabaseName(configuration.DatabaseName);
-                connection.setServerAddress(configuration.Server);
-                connection.setUserName(configuration.User);
-                connection.setUserPassword(configuration.Password);
-                connection.open();
+                Loader loader = new Loader(registrator.CrawlerId, registrator.DbConnection);
 
-                if (!RegistrateCrawlerId(connection, configuration.CrawlerId))
-                {
-                    Console.WriteLine("The crawler id {0} is already registered.\n" +
-                        "Please set another id to ensure correct start.", configuration.CrawlerId);
-
-                    return;
-                }
-
-                loader.Loader loader = new loader.Loader(configuration.CrawlerId, connection);
-
-                System.Threading.Thread loaderThread = new System.Threading.Thread(loader.start);
+                Thread loaderThread = new Thread(loader.Start);
                 loaderThread.Start();
                 loaderThread.Join();
-
-                UnregistrateCrawlerId(connection, configuration.CrawlerId);
             }
             catch (Exception e)
             {
@@ -53,33 +43,6 @@ namespace webcrawler
         {
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);
-        }
-
-        static bool RegistrateCrawlerId(database.IDbConnection connection, int id)
-        {
-            string query;
-
-            using (System.IO.StreamReader stream = new System.IO.StreamReader("registrate_crawler_id.sql"))
-            {
-                query = stream.ReadToEnd();
-            }
-
-            if (query == null)
-            {
-                return false;
-            }
-
-            Dictionary<string, (database.ProcedureArgumentType, bool)> procedureArguments =
-                new Dictionary<string, (database.ProcedureArgumentType, bool)>();
-
-            procedureArguments["id"] = (database.ProcedureArgumentType.Int32, false);
-            connection.executeStoredProcedure("registrate_crawler_id", query, procedureArguments);
-
-            return true;
-        }
-        static void UnregistrateCrawlerId(database.IDbConnection connection, int id)
-        {
-            connection.executeNonQuery("DELETE FROM crawler_id WHERE id='" + id + "'");
         }
     }
 }

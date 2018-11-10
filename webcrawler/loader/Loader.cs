@@ -6,58 +6,59 @@ using System.Collections.ObjectModel;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Newtonsoft.Json.Linq;
+using webcrawler.database;
 
 namespace webcrawler.loader
 {
     class Loader
     {
-        int m_crawlerId;
-        IWebDriver m_webDriver;
-        database.IDbConnection m_connection;
-        DataProvider m_dataProvider;
+        private uint m_crawlerId;
+        private IWebDriver m_webDriver;
+        private IDbConnection m_connection;
+        private DataProvider m_dataProvider;
 
-        public Loader(int crawlerId, database.IDbConnection connection)
+        public Loader(uint crawlerId, IDbConnection connection)
         {
             m_crawlerId = crawlerId;
 
-            initializeWebDriver();
+            InitializeWebDriver();
 
             m_connection = connection;
             m_dataProvider = new DataProvider(m_connection, m_crawlerId);
         }
 
-        public void start()
+        public void Start()
         {
             while (true)
             {
-                checkQueue();
+                CheckQueue();
                 Thread.Sleep(100);
             }
         }
 
-        void checkQueue()
+        void CheckQueue()
         {
-            List<ScheduledUrlData> urls = m_dataProvider.getAllUrlsToLoadFromQueue();
+            List<ScheduledUrlData> urls = m_dataProvider.GetAllUrlsToLoadFromQueue();
 
             if (urls.Count == 0)
             {
                 return;
             }
 
-            loadUrls(urls);
+            LoadUrls(urls);
 
-            m_dataProvider.removeAllCatchedUrls();
+            m_dataProvider.RemoveAllCatchedUrls();
         }
 
-        void loadUrls(List<ScheduledUrlData> scheduledUrlDataList)
+        void LoadUrls(List<ScheduledUrlData> scheduledUrlDataList)
         {
             foreach (ScheduledUrlData scheduledUrlData in scheduledUrlDataList)
             {
-                loadUrl(scheduledUrlData);
+                LoadUrl(scheduledUrlData);
             }
         }
 
-        void loadUrl(ScheduledUrlData scheduledUrlData)
+        void LoadUrl(ScheduledUrlData scheduledUrlData)
         {
             const string javaScriptWaitFunction =
                 "function wait()" +
@@ -66,7 +67,7 @@ namespace webcrawler.loader
                 "}" +
                 "wait();";
 
-            string targetResource = Helpers.fixUrlProtocolIfNeeded(scheduledUrlData.host + scheduledUrlData.path);
+            string targetResource = Helpers.FixUrlProtocolIfNeeded(scheduledUrlData.host + scheduledUrlData.path);
             m_webDriver.Navigate().GoToUrl(targetResource);
 
             IJavaScriptExecutor javaScriptExecutor = m_webDriver as IJavaScriptExecutor;
@@ -74,10 +75,10 @@ namespace webcrawler.loader
 
             Console.WriteLine(targetResource + " loaded");
 
-            m_dataProvider.savePageData(preparePageData(scheduledUrlData));
+            m_dataProvider.SavePageData(PreparePageData(scheduledUrlData));
         }
 
-        void initializeWebDriver()
+        void InitializeWebDriver()
         {
             ChromeOptions options = new ChromeOptions();
             options.AddArgument("--headless");
@@ -87,7 +88,7 @@ namespace webcrawler.loader
             m_webDriver = new ChromeDriver(Directory.GetCurrentDirectory(), options);
         }
 
-        PageData preparePageData(ScheduledUrlData scheduledUrlData)
+        PageData PreparePageData(ScheduledUrlData scheduledUrlData)
         {
             PageData pageData = new PageData();
             pageData.webResourceId = scheduledUrlData.webResourceId;
@@ -116,7 +117,7 @@ namespace webcrawler.loader
                     JObject response = (JObject)paramsObject["response"];
 
                     string urlString = (string)response["url"];
-                    int remotePort = extractRemotePort(response);
+                    int remotePort = ExtractRemotePort(response);
 
                     Uri loadedUrl = new Uri(urlString);
 
@@ -125,7 +126,7 @@ namespace webcrawler.loader
                         remotePort,
                         scheduledUrlData.path);
 
-                    if (!Helpers.compareUrls(loadedUrl, expectedUrlBuilder.Uri))
+                    if (!Helpers.CompareUrls(loadedUrl, expectedUrlBuilder.Uri))
                     {
                         continue;
                     }
@@ -151,7 +152,7 @@ namespace webcrawler.loader
             return pageData;
         }
 
-        int extractRemotePort(JObject json)
+        int ExtractRemotePort(JObject json)
         {
             JToken token;
 

@@ -13,27 +13,27 @@ namespace webcrawler.database
 
         //============================================================
 
-        public void setServerAddress(string serverAddress)
+        public void SetServerAddress(string serverAddress)
         {
             m_serverAddress = serverAddress;
         }
 
-        public void setUserName(string userName)
+        public void SetUserName(string userName)
         {
             m_userName = userName;
         }
 
-        public void setUserPassword(string password)
+        public void SetUserPassword(string password)
         {
             m_password = password;
         }
 
-        public void setDatabaseName(string database)
+        public void SetDatabaseName(string database)
         {
             m_database = database;
         }
 
-        public bool open()
+        public bool Open()
         {
             try
             {
@@ -72,7 +72,7 @@ namespace webcrawler.database
             return false;
         }
 
-        public bool close()
+        public bool Close()
         {
             try
             {
@@ -88,24 +88,24 @@ namespace webcrawler.database
             return false;
         }
 
-        public bool ping()
+        public bool Ping()
         {
             return m_connection != null && m_connection.Ping();
         }
 
-        public int executeNonQuery(string query, params SqlCommandParameter[] sqlCommandParameters)
+        public int ExecuteNonQuery(string query, params SqlCommandParameter[] sqlCommandParameters)
         {
             MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, m_connection);
 
             foreach (SqlCommandParameter sqlCommandParameter in sqlCommandParameters)
             {
-                command.Parameters.Add(sqlCommandParameter.parameterName, mapProcedureArgumentType(sqlCommandParameter.type)).Value = sqlCommandParameter.value;
+                command.Parameters.Add(sqlCommandParameter.parameterName, MapProcedureArgumentType(sqlCommandParameter.type)).Value = sqlCommandParameter.value;
             }
 
             return command.ExecuteNonQuery();
         }
 
-        public int executeStoredProcedure(
+        public int ExecuteStoredProcedure(
             string procedureName,
             string query,
             Dictionary<string, (ProcedureArgumentType type, bool isOutput)> procedureParameters)
@@ -128,7 +128,7 @@ namespace webcrawler.database
             foreach (KeyValuePair<string, (ProcedureArgumentType type, bool isOutput)> entry in procedureParameters)
             {
                 var (sqlProcedureArgumentType, isOutput) = entry.Value;
-                command.Parameters.AddWithValue("@" + entry.Key, mapProcedureArgumentType(sqlProcedureArgumentType));
+                command.Parameters.AddWithValue("@" + entry.Key, MapProcedureArgumentType(sqlProcedureArgumentType));
 
                 command.Parameters["@" + entry.Key].Direction = isOutput ?
                     System.Data.ParameterDirection.Output :
@@ -138,7 +138,7 @@ namespace webcrawler.database
             return command.ExecuteNonQuery();
         }
 
-        public List<object>[] executeReadQuery(string query)
+        public List<object>[] ExecuteReadQuery(string query)
         {
             MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, m_connection);
             MySql.Data.MySqlClient.MySqlDataReader dataReader = command.ExecuteReader();
@@ -162,12 +162,41 @@ namespace webcrawler.database
             return result;
         }
 
-        public ISqlTransaction beginTransaction()
+        public Dictionary<string, object>[] ExecuteReadQuery(string query, params string[] columns)
+        {
+            MySql.Data.MySqlClient.MySqlCommand command = new MySql.Data.MySqlClient.MySqlCommand(query, m_connection);
+            MySql.Data.MySqlClient.MySqlDataReader dataReader = command.ExecuteReader();
+
+            Dictionary<string, object>[] result = new Dictionary<string, object>[dataReader.FieldCount];
+
+            if (dataReader.FieldCount != columns.Length)
+            {
+                throw new ArgumentException("Column count must be equal to extraction from table column count");
+            }
+
+            for (int i = 0; i < dataReader.FieldCount; ++i)
+            {
+                result[i] = new Dictionary<string, object>();
+            }
+
+            while (dataReader.Read())
+            {
+                for (int i = 0; i < dataReader.FieldCount; ++i)
+                {
+                    result[i].Add(columns[i], dataReader[columns[i]]);
+                }
+            }
+
+            dataReader.Close();
+            return result;
+        }
+
+        public ISqlTransaction BeginTransaction()
         {
             return new MySqlTransaction(m_connection.BeginTransaction());
         }
 
-        MySql.Data.MySqlClient.MySqlDbType mapProcedureArgumentType(ProcedureArgumentType type)
+        MySql.Data.MySqlClient.MySqlDbType MapProcedureArgumentType(ProcedureArgumentType type)
         {
             switch (type)
             {

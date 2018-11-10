@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Net.NetworkInformation;
 
 namespace webcrawler
 {
@@ -9,7 +8,7 @@ namespace webcrawler
         static string s_httpProtocol = "http";
         static string s_httpsProtocol = "https";
 
-        public static string fixUrlProtocolIfNeeded(string url)
+        public static string FixUrlProtocolIfNeeded(string url)
         {
             if (!url.StartsWith("https://") && !url.StartsWith("http://"))
             {
@@ -19,7 +18,7 @@ namespace webcrawler
             return url;
         }
 
-        public static int defaultPortNumberByScheme(string scheme)
+        public static int DefaultPortNumberByScheme(string scheme)
         {
             if (s_httpProtocol == scheme)
             {
@@ -34,12 +33,28 @@ namespace webcrawler
             throw new Exception("Undefined protocol. Unknown default port number");
         }
 
-        public static bool compareUrls(Uri lhs, Uri rhs)
+        public static string GetMacAddress()
         {
-            return convertUrlToCanonizedForm(lhs) == convertUrlToCanonizedForm(rhs);
+            string macAddresses = string.Empty;
+
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus == OperationalStatus.Up)
+                {
+                    macAddresses += nic.GetPhysicalAddress().ToString();
+                    break;
+                }
+            }
+
+            return macAddresses;
         }
 
-        static string convertUrlToCanonizedForm(Uri url)
+        public static bool CompareUrls(Uri lhs, Uri rhs)
+        {
+            return ConvertUrlToCanonizedForm(lhs) == ConvertUrlToCanonizedForm(rhs);
+        }
+
+        static string ConvertUrlToCanonizedForm(Uri url)
         {
             string urlValue = url.ToString();
 

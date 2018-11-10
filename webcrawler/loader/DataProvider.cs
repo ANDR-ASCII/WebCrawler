@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using webcrawler.database;
 
 namespace webcrawler.loader
 {
@@ -22,16 +23,16 @@ namespace webcrawler.loader
 
     class DataProvider
     {
-        database.IDbConnection m_connection;
-        int m_crawlerId;
+        private IDbConnection m_connection;
+        private uint m_crawlerId;
 
-        public DataProvider(database.IDbConnection connection, int crawlerId)
+        public DataProvider(IDbConnection connection, uint crawlerId)
         {
             m_connection = connection;
             m_crawlerId = crawlerId;
         }
 
-        public void savePageData(PageData pageData)
+        public void SavePageData(PageData pageData)
         {
             string insertDataQuery = "INSERT INTO data (web_resource_id, path, html_code, server_response, protocol, date_time, status_code)" +
                 "VALUES " +
@@ -43,18 +44,18 @@ namespace webcrawler.loader
                 "@datetime, " +
                 "'" + pageData.statusCode + "')";
 
-            database.SqlCommandParameter sqlCommandParameter = new database.SqlCommandParameter();
+            SqlCommandParameter sqlCommandParameter = new SqlCommandParameter();
             sqlCommandParameter.parameterName = "@datetime";
-            sqlCommandParameter.type = database.ProcedureArgumentType.DateTime;
+            sqlCommandParameter.type = ProcedureArgumentType.DateTime;
             sqlCommandParameter.value = pageData.dateTime;
 
-            m_connection.executeNonQuery(insertDataQuery, sqlCommandParameter);
+            m_connection.ExecuteNonQuery(insertDataQuery, sqlCommandParameter);
         }
 
-        public List<ScheduledUrlData> getAllUrlsToLoadFromQueue()
+        public List<ScheduledUrlData> GetAllUrlsToLoadFromQueue()
         {
-            m_connection.executeNonQuery("UPDATE queue SET catched='1' WHERE crawler_id='" + m_crawlerId + "'");
-            List<object>[] queryResult = m_connection.executeReadQuery("SELECT web_resource_id, path FROM queue WHERE crawler_id='" + m_crawlerId + "'");
+            m_connection.ExecuteNonQuery("UPDATE queue SET catched='1' WHERE crawler_id='" + m_crawlerId + "'");
+            List<object>[] queryResult = m_connection.ExecuteReadQuery("SELECT web_resource_id, path FROM queue WHERE crawler_id='" + m_crawlerId + "'");
 
             List<ScheduledUrlData> result = new List<ScheduledUrlData>();
 
@@ -68,7 +69,7 @@ namespace webcrawler.loader
                 ScheduledUrlData scheduledUrlData;
                 scheduledUrlData.webResourceId = int.Parse(queryResult[0][i].ToString());
 
-                string url = getWebResourceUrlById(scheduledUrlData.webResourceId);
+                string url = GetWebResourceUrlById(scheduledUrlData.webResourceId);
 
                 if (url == null)
                 {
@@ -84,14 +85,14 @@ namespace webcrawler.loader
             return result;
         }
 
-        public void removeAllCatchedUrls()
+        public void RemoveAllCatchedUrls()
         {
-            m_connection.executeNonQuery("DELETE FROM queue WHERE crawler_id='" + m_crawlerId + "' and catched='1'");
+            m_connection.ExecuteNonQuery("DELETE FROM queue WHERE crawler_id='" + m_crawlerId + "' and catched='1'");
         }
 
-        string getWebResourceUrlById(int id)
+        string GetWebResourceUrlById(int id)
         {
-            List<object>[] result = m_connection.executeReadQuery("SELECT url FROM web_resources WHERE id='" + id + "'");
+            List<object>[] result = m_connection.ExecuteReadQuery("SELECT url FROM web_resources WHERE id='" + id + "'");
 
             if (result.Length == 0)
             {

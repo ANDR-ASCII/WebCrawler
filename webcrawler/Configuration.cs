@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace webcrawler
 {
     class Configuration
     {
-        static string s_crawlerIdParamName = "crawler_id";
         static string s_dbParamName = "database";
         static string s_serverAddressParamName = "server";
         static string s_dbUserParamName = "db_user";
@@ -16,7 +13,6 @@ namespace webcrawler
         string m_server;
         string m_user;
         string m_password;
-        int m_crawlerId;
         bool m_showHelp;
         NDesk.Options.OptionSet m_optionsSet;
 
@@ -27,17 +23,15 @@ namespace webcrawler
 
             m_optionsSet = new NDesk.Options.OptionSet()
             {
-                { s_crawlerIdParamName + "=", "set crawler id.", v => commandParams.Add(s_crawlerIdParamName, v) },
                 { "h|help", "show this message and exit.", v => m_showHelp = (v != null) },
-                { s_dbParamName + "=", "sets the database name to connect.", v => commandParams.Add(s_crawlerIdParamName, v) },
-                { s_serverAddressParamName + "=", "sets the database server address.", v => commandParams.Add(s_crawlerIdParamName, v) },
-                { s_dbUserParamName + "=", "sets the database user name.", v => commandParams.Add(s_crawlerIdParamName, v) },
-                { s_dbUserPasswordParamName + "=", "sets the database user password.", v => commandParams.Add(s_crawlerIdParamName, v) }
+                { s_dbParamName + "=", "sets the database name to connect.", v => commandParams.Add(s_dbParamName, v) },
+                { s_serverAddressParamName + "=", "sets the database server address.", v => commandParams.Add(s_serverAddressParamName, v) },
+                { s_dbUserParamName + "=", "sets the database user name.", v => commandParams.Add(s_dbUserParamName, v) },
+                { s_dbUserPasswordParamName + "=", "sets the database user password.", v => commandParams.Add(s_dbUserPasswordParamName, v) }
             };
 
             m_optionsSet.Parse(args);
 
-            m_crawlerId = commandParams.ContainsKey(s_crawlerIdParamName) ? int.Parse(commandParams[s_crawlerIdParamName]) : 0;
             m_databaseName = commandParams.ContainsKey(s_dbParamName) ? commandParams[s_dbParamName] : "webcrawler";
             m_server = commandParams.ContainsKey(s_serverAddressParamName) ? commandParams[s_serverAddressParamName] : "127.0.0.1";
             m_user = commandParams.ContainsKey(s_dbUserParamName) ? commandParams[s_dbUserParamName] : "root";
@@ -59,10 +53,6 @@ namespace webcrawler
         public string Password
         {
             get { return m_password; }
-        }
-        public int CrawlerId
-        {
-            get { return m_crawlerId; }
         }
         public bool ShowHelp
         {

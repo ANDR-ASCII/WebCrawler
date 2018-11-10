@@ -1,8 +1,7 @@
 {
   "profiles": {
     "webcrawler": {
-      "commandName": "Project",
-      "commandLineArgs": "--crawler_id=0"
+      "commandName": "Project"
     }
   }
 }

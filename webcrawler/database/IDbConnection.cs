@@ -53,18 +53,19 @@ namespace webcrawler.database
 
     interface IDbConnection
     {
-        void setServerAddress(string serverAddress);
-        void setUserName(string userName);
-        void setUserPassword(string password);
-        void setDatabaseName(string database);
-        bool open();
-        bool close();
-        bool ping();
+        void SetServerAddress(string serverAddress);
+        void SetUserName(string userName);
+        void SetUserPassword(string password);
+        void SetDatabaseName(string database);
+        bool Open();
+        bool Close();
+        bool Ping();
 
-        int executeNonQuery(string query, params SqlCommandParameter[] sqlCommandParameters);
-        int executeStoredProcedure(string procedureName, string query, Dictionary<string, (ProcedureArgumentType type, bool isOutput)> procedureParameters);
-        List<object>[] executeReadQuery(string query);
+        int ExecuteNonQuery(string query, params SqlCommandParameter[] sqlCommandParameters);
+        int ExecuteStoredProcedure(string procedureName, string query, Dictionary<string, (ProcedureArgumentType type, bool isOutput)> procedureParameters);
+        List<object>[] ExecuteReadQuery(string query);
+        Dictionary<string, object>[] ExecuteReadQuery(string query, params string[] columns);
 
-        ISqlTransaction beginTransaction();
+        ISqlTransaction BeginTransaction();
     }
 }
