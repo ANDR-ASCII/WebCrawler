@@ -1,13 +1,18 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using Newtonsoft.Json.Linq;
 
 namespace webcrawler.loader
 {
     class Loader
     {
         int m_crawlerId;
-        OpenQA.Selenium.IWebDriver m_webDriver;
+        IWebDriver m_webDriver;
         database.IDbConnection m_connection;
         DataProvider m_dataProvider;
 
@@ -32,7 +37,7 @@ namespace webcrawler.loader
 
         void checkQueue()
         {
-            List<string> urls = m_dataProvider.getAllUrlsToLoadFromQueue();
+            List<ScheduledUrlData> urls = m_dataProvider.getAllUrlsToLoadFromQueue();
 
             if (urls.Count == 0)
             {
@@ -44,15 +49,15 @@ namespace webcrawler.loader
             m_dataProvider.removeAllCatchedUrls();
         }
 
-        void loadUrls(List<string> urls)
+        void loadUrls(List<ScheduledUrlData> scheduledUrlDataList)
         {
-            foreach (string url in urls)
+            foreach (ScheduledUrlData scheduledUrlData in scheduledUrlDataList)
             {
-                loadUrl(url);
+                loadUrl(scheduledUrlData);
             }
         }
 
-        void loadUrl(string url)
+        void loadUrl(ScheduledUrlData scheduledUrlData)
         {
             const string javaScriptWaitFunction =
                 "function wait()" +
@@ -61,33 +66,101 @@ namespace webcrawler.loader
                 "}" +
                 "wait();";
 
-            url = fixUrlProtocolIfNeeded(url);
-            m_webDriver.Navigate().GoToUrl(url);
+            string targetResource = Helpers.fixUrlProtocolIfNeeded(scheduledUrlData.host + scheduledUrlData.path);
+            m_webDriver.Navigate().GoToUrl(targetResource);
 
-            OpenQA.Selenium.IJavaScriptExecutor javaScriptExecutor =
-                m_webDriver as OpenQA.Selenium.IJavaScriptExecutor;
-
+            IJavaScriptExecutor javaScriptExecutor = m_webDriver as IJavaScriptExecutor;
             javaScriptExecutor.ExecuteScript(javaScriptWaitFunction);
 
-            System.Console.WriteLine(url + " loaded");
+            Console.WriteLine(targetResource + " loaded");
+
+            m_dataProvider.savePageData(preparePageData(scheduledUrlData));
         }
 
         void initializeWebDriver()
         {
-            OpenQA.Selenium.Chrome.ChromeOptions options = new OpenQA.Selenium.Chrome.ChromeOptions();
+            ChromeOptions options = new ChromeOptions();
             options.AddArgument("--headless");
+            options.AddArgument("--disable-gpu");
+            options.SetLoggingPreference("performance", LogLevel.All);
 
-            m_webDriver = new OpenQA.Selenium.Chrome.ChromeDriver(Directory.GetCurrentDirectory(), options);
+            m_webDriver = new ChromeDriver(Directory.GetCurrentDirectory(), options);
         }
 
-        string fixUrlProtocolIfNeeded(string url)
+        PageData preparePageData(ScheduledUrlData scheduledUrlData)
         {
-            if (!url.StartsWith("https://") && !url.StartsWith("http://"))
+            PageData pageData = new PageData();
+            pageData.webResourceId = scheduledUrlData.webResourceId;
+            pageData.path = scheduledUrlData.path;
+            pageData.htmlCode = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(m_webDriver.PageSource));
+
+            ReadOnlyCollection<LogEntry> performanceLogs =
+                m_webDriver.Manage().Logs.GetLog("performance");
+
+            foreach (LogEntry logEntry in performanceLogs)
             {
-                return new string("http://" + url);
+                JObject jsonObject;
+
+                try
+                {
+                    jsonObject = JObject.Parse(logEntry.Message);
+
+                    string methodString = (string)jsonObject["message"]["method"];
+
+                    if (!methodString.StartsWith("Network.responseReceived"))
+                    {
+                        continue;
+                    }
+
+                    JObject paramsObject = (JObject)jsonObject["message"]["params"];
+                    JObject response = (JObject)paramsObject["response"];
+
+                    string urlString = (string)response["url"];
+                    int remotePort = extractRemotePort(response);
+
+                    Uri loadedUrl = new Uri(urlString);
+
+                    UriBuilder expectedUrlBuilder = new UriBuilder(loadedUrl.Scheme,
+                        scheduledUrlData.host,
+                        remotePort,
+                        scheduledUrlData.path);
+
+                    if (!Helpers.compareUrls(loadedUrl, expectedUrlBuilder.Uri))
+                    {
+                        continue;
+                    }
+
+                    // TODO: here we must not to continue loop execution by throwing an exception
+                    // otherwise we lose a valid target URL information
+
+                    JObject headers = (JObject)response["headers"];
+
+                    pageData.protocol = loadedUrl.Scheme;
+                    pageData.statusCode = (int)response["status"];
+                    pageData.dateTime = DateTime.Now;
+                    pageData.serverResponse = headers.ToString();
+                    break;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    continue;
+                }
             }
 
-            return url;
+            return pageData;
+        }
+
+        int extractRemotePort(JObject json)
+        {
+            JToken token;
+
+            if (json.TryGetValue("remotePort", out token))
+            {
+                return (int)token;
+            }
+
+            return 80;
         }
     }
 }

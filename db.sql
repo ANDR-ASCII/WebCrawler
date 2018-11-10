@@ -23,8 +23,7 @@ DROP TABLE IF EXISTS `crawler_id`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `crawler_id` (
-  `id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`)
+  `id` int(10) unsigned DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -34,6 +33,7 @@ CREATE TABLE `crawler_id` (
 
 LOCK TABLES `crawler_id` WRITE;
 /*!40000 ALTER TABLE `crawler_id` DISABLE KEYS */;
+INSERT INTO `crawler_id` VALUES (3);
 /*!40000 ALTER TABLE `crawler_id` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -52,6 +52,7 @@ CREATE TABLE `data` (
   `server_response` mediumtext,
   `protocol` varchar(45) DEFAULT NULL,
   `date_time` datetime DEFAULT NULL,
+  `status_code` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -206,4 +207,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-11-04 20:25:08
+-- Dump completed on 2018-11-10 19:02:52
